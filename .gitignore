@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-demo
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+# dati personali: mai nel repository
+*backup*.json
+dati-iniziali.json
