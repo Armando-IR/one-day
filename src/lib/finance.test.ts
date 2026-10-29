@@ -12,7 +12,7 @@ const uid = () => String(++id);
 
 const data: Data = {
   settings: {
-    ce_start: '2026-01-01', cf_start: '2026-10-01', cf_opening: 1000, personal_income: 500,
+    ce_start: '2026-01-01', cf_start: '2026-10-01', cf_opening: 1000, personal_income: 500, personal_auto: false,
     savings_fixed: 400, savings_pct: 0.25, tax_rate: 0.3, phase_probs: DEFAULT_PROBS,
   },
   invoices: [
@@ -136,6 +136,24 @@ describe('spese con un mese di inizio e di fine', () => {
     expect(g.business).toBeCloseTo(140); // October: Studio runs
     expect(g.personalCosts).toBeCloseTo(30); // October: no rent yet
     expect(goals(ranged, '2026-12-10').business).toBeCloseTo(20);
+  });
+});
+
+describe('quanto vuoi per te calcolato dalle spese personali', () => {
+  const auto: Data = { ...data, settings: { ...data.settings, personal_auto: true } };
+  it('il minimo parte dalle spese personali del mese', () => {
+    const g = goals(auto, TODAY);
+    expect(g.personalAuto).toBe(true);
+    expect(g.personal).toBeCloseTo(330); // rent 300 + insurance 360 / 12
+    expect(g.baseline).toBeCloseTo(330 / 0.7 + 140);
+    expect(g.plusFixed).toBeCloseTo((330 + 400) / 0.7 + 140);
+  });
+  it('segue le spese che iniziano o finiscono', () => {
+    const later: Data = { ...auto, fixed_costs: auto.fixed_costs.map((c) => (c.name === 'Affitto' ? { ...c, end_month: '2026-11-01' } : c)) };
+    expect(goals(later, '2026-12-05').personal).toBeCloseTo(30);
+  });
+  it('spento, vale la cifra scritta a mano', () => {
+    expect(goals(data, TODAY).personal).toBe(500);
   });
 });
 

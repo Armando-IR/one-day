@@ -3,10 +3,10 @@ import type { Phase } from '../lib/types';
 import { PHASES, TABLES } from '../lib/types';
 import { useData } from '../state/data';
 import { fromMonthInput, toMonthInput } from '../lib/dates';
-import { DEFAULT_PROBS } from '../lib/finance';
+import { DEFAULT_PROBS, goals } from '../lib/finance';
 import { parseBackup } from '../lib/backup';
-import { Field, FormActions, MoneyInput, PercentInput, Sheet } from '../ui/components';
-import { monthName } from '../ui/format';
+import { Field, FormActions, InlineSwitch, MoneyInput, PercentInput, Sheet } from '../ui/components';
+import { eur, monthName } from '../ui/format';
 
 function useSaving(onClose: () => void) {
   const [saving, setSaving] = useState(false);
@@ -48,7 +48,7 @@ export function YearForm({ onClose }: { onClose: () => void }) {
   const start = fromMonthInput(month);
   return (
     <Sheet title="Anno del conto economico" onClose={onClose}>
-      <Field label="Primo mese" hint="Il conto economico e gli obiettivi mostrano i 12 mesi a partire da qui.">
+      <Field label="Primo mese" hint="Di solito gennaio, come l'anno delle tasse. Il conto economico, gli obiettivi e i trimestri contano i 12 mesi a partire da qui.">
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
       </Field>
       <FormActions saving={saving} onSave={() => start && void run(() => saveSettings({ ce_start: start }))} />
@@ -57,18 +57,28 @@ export function YearForm({ onClose }: { onClose: () => void }) {
 }
 
 export function ParamsForm({ onClose }: { onClose: () => void }) {
-  const { data, saveSettings } = useData();
+  const { data, today, saveSettings } = useData();
   const s = data.settings;
   const [income, setIncome] = useState<number | null>(s.personal_income);
+  const [auto, setAuto] = useState(s.personal_auto);
+  const fromCosts = useMemo(() => goals(data, today).personalCosts, [data, today]);
   const [fixed, setFixed] = useState<number | null>(s.savings_fixed);
   const [pctSave, setPctSave] = useState<number | null>(s.savings_pct);
   const [tax, setTax] = useState<number | null>(s.tax_rate);
   const { saving, run } = useSaving(onClose);
   return (
     <Sheet title="Da cosa dipendono gli obiettivi" onClose={onClose}>
-      <Field label="Quanto vuoi per te al mese (€, netto)">
-        <MoneyInput value={income} onChange={setIncome} />
-      </Field>
+      <InlineSwitch label="Calcola dalle spese personali" checked={auto} onChange={setAuto} />
+      {auto ? (
+        <p className="muted small" style={{ marginTop: -6 }}>
+          Quanto vuoi per te è la somma delle spese personali di questo mese: <strong className="num">{eur(fromCosts)}</strong>,
+          con quelle di ogni anno divise per 12. Cambia da solo quando aggiungi o chiudi una spesa.
+        </p>
+      ) : (
+        <Field label="Quanto vuoi per te al mese (€, netto)" hint={`Le spese personali di questo mese sono ${eur(fromCosts)}.`}>
+          <MoneyInput value={income} onChange={setIncome} />
+        </Field>
+      )}
       <Field label="Risparmio fisso al mese (€)">
         <MoneyInput value={fixed} onChange={setFixed} />
       </Field>
@@ -80,7 +90,7 @@ export function ParamsForm({ onClose }: { onClose: () => void }) {
       </Field>
       <FormActions saving={saving}
         onSave={() => void run(() => saveSettings({
-          personal_income: income ?? 0, savings_fixed: fixed ?? 0, savings_pct: Math.min(0.95, pctSave ?? 0),
+          personal_income: income ?? 0, personal_auto: auto, savings_fixed: fixed ?? 0, savings_pct: Math.min(0.95, pctSave ?? 0),
           tax_rate: Math.min(0.95, tax ?? 0),
         }))} />
     </Sheet>

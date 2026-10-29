@@ -13,6 +13,7 @@ create table if not exists public.settings (
   cf_start date not null default date_trunc('month', now())::date,
   cf_opening numeric,
   personal_income numeric not null default 500,
+  personal_auto boolean not null default true,
   savings_fixed numeric not null default 400,
   savings_pct numeric not null default 0.25,
   tax_rate numeric not null default 0.30,
@@ -20,6 +21,9 @@ create table if not exists public.settings (
     '{"Contatto":0.1,"Proposta inviata":0.3,"Trattativa":0.6,"Confermato a voce":0.9,"Persa":0}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- Aggiornamento: «quanto vuoi per te» calcolato dalle spese personali (acceso)
+alter table public.settings add column if not exists personal_auto boolean not null default true;
 
 -- Lavori: fatture emesse ai clienti e ricevute dai collaboratori
 create table if not exists public.invoices (

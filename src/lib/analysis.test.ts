@@ -16,7 +16,7 @@ const cost = (over: Partial<Data['fixed_costs'][number]>): Data['fixed_costs'][n
  */
 const base: Data = {
   settings: {
-    ce_start: '2026-01-01', cf_start: '2026-10-01', cf_opening: 1000, personal_income: 500,
+    ce_start: '2026-01-01', cf_start: '2026-10-01', cf_opening: 1000, personal_income: 500, personal_auto: false,
     savings_fixed: 400, savings_pct: 0.25, tax_rate: 0.3, phase_probs: DEFAULT_PROBS,
   },
   invoices: [
@@ -88,6 +88,14 @@ describe('analisi della situazione', () => {
     expect(t).toContain('«Spese quotidiane» non ha ancora un importo');
     const course: Data = { ...base, fixed_costs: [...base.fixed_costs, cost({ family: 'Altro', name: 'Corso', amount: 60, start_month: '2026-12-01', end_month: '2027-03-01' })] };
     expect(section(course, 'Entrate e spese')).toContain('paghi Corso solo da dicembre 2026 a marzo 2027 (60 € al mese)');
+  });
+
+  it('con quanto vuoi per te calcolato dalle spese', () => {
+    const auto: Data = { ...base, settings: { ...base.settings, personal_auto: true } };
+    const t = section(auto, 'Entrate e spese');
+    expect(t).toContain('Le spese personali di ogni mese sono 440 €: il minimo da guadagnare parte da qui.');
+    expect(t).toContain('sembrano più basse del vero e anche il minimo da guadagnare');
+    expect(analysis(auto, TODAY).actions.map((x) => x.target.kind)).not.toContain('params');
   });
 
   it('debiti e crediti', () => {

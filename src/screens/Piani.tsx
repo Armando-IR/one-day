@@ -136,7 +136,7 @@ function Obiettivi() {
             const t = q.started ? tierOf(q.total / 3, g) : null;
             return (
               <div key={q.n} className={`quarter-tile ${t === null ? 'future' : `tier-${t}`}`}>
-                <span className="q-label">{q.n}° trimestre</span>
+                <span className="q-label">{q.n}° trimestre, {monthName(q.first).slice(0, 3)}–{monthName(q.last).slice(0, 3)}</span>
                 <span className="q-amount num">{eur(q.total)}</span>
                 <span className="q-status">
                   {t === null ? 'Non ancora iniziato' : q.complete ? TIER_TEXT[t] : `In corso, finora ${TIER_TEXT[t].toLowerCase()}`}
@@ -166,7 +166,7 @@ function Obiettivi() {
           ))}
         </ul>
         <p className="muted small">
-          Margine vuol dire ricavi meno collaboratori. Dipende da quanto vuoi per te ({eur(s.personal_income)} al mese),
+          Margine vuol dire ricavi meno collaboratori. Dipende da quanto vuoi per te ({eur(g.personal)} al mese{g.personalAuto ? ', cioè le spese personali' : ''}),
           dalle spese di lavoro ({eur(g.business)} al mese) e dalle tasse ({pct(s.tax_rate)}).
           {g.otherIncome > 0.5 && ` Le altre entrate (${eur(g.otherIncome)} al mese, come stipendio o pensione) lo abbassano: coprono già una parte di quello che vuoi per te.`}
         </p>
@@ -194,7 +194,9 @@ function Obiettivi() {
       )}
 
       <p className="muted small">
-        {Math.abs(s.personal_income - g.personalCosts) < 0.5
+        {g.personalAuto
+          ? 'Quanto vuoi per te è calcolato dalle spese personali: se manca qualche importo, il minimo viene più basso del vero.'
+          : Math.abs(s.personal_income - g.personalCosts) < 0.5
           ? 'Quello che vuoi per te copre giusto le spese personali.'
           : g.covers
             ? `Quello che vuoi per te copre le spese personali: avanzano ${eur(s.personal_income - g.personalCosts)} al mese.`

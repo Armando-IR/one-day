@@ -173,7 +173,7 @@ export function Spese() {
 
       <p className="muted small">
         Le spese di lavoro di ogni mese e di ogni anno entrano nel minimo da guadagnare; quelle personali dovrebbero stare dentro
-        quanto vuoi per te ({eur(data.settings.personal_income)} al mese). Una spesa con il mese di inizio o di fine conta solo
+        quanto vuoi per te ({data.settings.personal_auto ? 'adesso calcolato proprio da queste spese' : `${eur(data.settings.personal_income)} al mese`}). Una spesa con il mese di inizio o di fine conta solo
         nei mesi in cui c'è; in grigio quelle finite, spente o che devono ancora iniziare. Le spese una tantum entrano nel
         cashflow e nel conto economico del loro mese e nell'obiettivo «Minimo + accantonamenti».
       </p>

@@ -203,12 +203,16 @@ export function analysis(d: Data, today: string): Analysis {
   if (incomesAhead.length) {
     spese.push(`Nei prossimi 12 mesi arrivano anche **${eur(sum(incomesAhead.map((x) => x.amount)))}** di entrate una tantum (${list(incomesAhead.map((x) => x.name))}).`);
   }
-  if (personal > 0) {
+  if (personal > 0 && g.personalAuto) {
+    spese.push(`Le spese personali di ogni mese sono **${eur(personal)}**: il minimo da guadagnare parte da qui.`);
+  } else if (personal > 0) {
     spese.push(`Le spese personali di ogni mese sono **${eur(personal)}**${
       mine > 0 ? (personal <= mine ? `, dentro i ${eur(mine)} che vuoi per te` : `: superano di **${eur(personal - mine)}** i ${eur(mine)} che vuoi per te`) : ''}.`);
-    if (mine > 0 && personal > mine) {
+  }
+  if (personal > 0) {
+    if (!g.personalAuto && mine > 0 && personal > mine) {
       raise('watch');
-      spese.push('Il minimo da guadagnare si calcola su quanto vuoi per te: se le spese sono di più, il minimo è troppo basso. Alza «quanto vuoi per te» o taglia una spesa.');
+      spese.push('Il minimo da guadagnare si calcola su quanto vuoi per te: se le spese sono di più, il minimo è troppo basso. Alza «quanto vuoi per te», oppure fallo calcolare dalle spese, o taglia una spesa.');
       actions.push({ text: 'Rivedi quanto vuoi per te', sub: `Le spese personali (${eur(personal)} al mese) superano i ${eur(mine)} che hai indicato`, target: { kind: 'params' } });
     }
     const byFamily = new Map<string, number>();
@@ -245,7 +249,7 @@ export function analysis(d: Data, today: string): Analysis {
   if (noAmount.length) {
     const shown = noAmount.slice(0, 3).map((c) => `«${c.name}»`);
     const which = noAmount.length > 3 ? `${shown.join(', ')} e altre` : list(shown);
-    spese.push(`${noAmount.length === 1 ? `${shown[0]} non ha ancora un importo` : `${noAmount.length} spese non hanno ancora un importo (${which})`}: finché manca, le spese sembrano più basse del vero.`);
+    spese.push(`${noAmount.length === 1 ? `${shown[0]} non ha ancora un importo` : `${noAmount.length} spese non hanno ancora un importo (${which})`}: finché manca, le spese sembrano più basse del vero${g.personalAuto ? ' e anche il minimo da guadagnare' : ''}.`);
   }
   if (!spese.length) spese.push("Non ci sono ancora spese: aggiungi almeno quelle di ogni mese, così l'analisi del conto è giusta.");
 

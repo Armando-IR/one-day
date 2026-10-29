@@ -106,6 +106,8 @@ export interface Settings {
   cf_start: string;
   cf_opening: number | null;
   personal_income: number;
+  /** When on, "quanto vuoi per te" is the sum of this month's personal expenses instead of personal_income. */
+  personal_auto: boolean;
   savings_fixed: number;
   savings_pct: number;
   tax_rate: number;

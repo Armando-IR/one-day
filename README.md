@@ -93,7 +93,7 @@ Ogni evento è alle 9, con un promemoria il giorno prima. Le rate si ripetono og
 
 ## Da sapere
 
-- **Aggiornamenti del database.** Se una nuova versione dell'app aggiunge una tabella (come quella dei risparmi fuori dal conto o delle entrate) o un campo (come il mese delle spese una tantum, o il mese di inizio e di fine delle spese), riesegui tutto `supabase/schema.sql` nello SQL Editor: crea solo quello che manca e non tocca i dati. Se te ne dimentichi, l'app te lo ricorda all'avvio.
+- **Aggiornamenti del database.** Se una nuova versione dell'app aggiunge una tabella (come quella dei risparmi fuori dal conto o delle entrate) o un campo (come il mese delle spese una tantum, il mese di inizio e di fine delle spese, o «calcola dalle spese personali»), riesegui tutto `supabase/schema.sql` nello SQL Editor: crea solo quello che manca e non tocca i dati. Se te ne dimentichi, l'app te lo ricorda all'avvio.
 - **Progetti gratuiti in pausa.** Supabase mette in pausa i progetti gratuiti dopo una settimana senza attività. Se succede, l'app mostra i dati salvati sul telefono con l'avviso «Il database non risponde»: entra in Supabase e premi **Restore project**, poi tocca **Riprova**.
 - **Aggiornamenti.** Ogni modifica caricata su GitHub viene pubblicata da Vercel in un paio di minuti. L'app sul telefono mostra «C'è una versione nuova dell'app» con il pulsante **Aggiorna**.
 - **Più dispositivi.** Puoi aprire la stessa app dal computer: i dati sono gli stessi. Quando torni sull'app dal telefono, si aggiorna da sola.
@@ -110,6 +110,8 @@ Ogni evento è alle 9, con un promemoria il giorno prima. Le rate si ripetono og
   - Minimo + accantonamenti = (quanto vuoi per te + quanto mettere da parte al mese per spese una tantum e wishlist in programma) ÷ (1 − aliquota) + spese di lavoro.
 
   Le spese di lavoro sono quelle del mese in corso: una spesa già finita o che deve ancora iniziare non conta.
+
+  «Quanto vuoi per te» si può far calcolare dalle spese personali (Impostazioni → Obiettivi e tasse → «Calcola dalle spese personali», acceso di base): è la somma delle spese personali del mese in corso, con quelle di ogni anno divise per 12. Spento, vale la cifra scritta a mano. Con l'interruttore acceso il minimo è giusto solo se le spese hanno tutte un importo.
 - **Patrimonio (Conti → Patrimonio)**: a fine mese, quello che hai (saldo del conto, risparmi fuori dal conto, fatture ancora da incassare) meno quello che devi (rate, F24, collaboratori). I risparmi fuori dal conto contano solo qui, non nel cashflow. Contano solo crediti e debiti che restano aperti dopo il mese, perché incassi e pagamenti del mese sono già nel saldo del conto.
 - **Debiti (in Conti → Patrimonio)**: per ogni rata, residuo = rata × rate ancora da pagare (quella del mese in corso si considera già addebitata il 1°). Poi gli F24 con scadenza da oggi in avanti e le fatture dei collaboratori non ancora pagate. Rate senza dati e F24 senza importo restano fuori dal totale, segnalati.
 - **Media, trimestri e totale (Piani → Obiettivi)**: come il foglio Projections. Margine del mese; media al mese e totale da inizio anno; trimestri confrontati con gli obiettivi moltiplicati per tre. La media parte sempre da inizio anno (nel foglio, da luglio ripartiva da zero).

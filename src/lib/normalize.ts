@@ -71,6 +71,7 @@ export function normalizeSettings(raw: unknown): Settings {
     cf_start: day(r.cf_start) ?? `${new Date().toISOString().slice(0, 7)}-01`,
     cf_opening: num(r.cf_opening),
     personal_income: num(r.personal_income) ?? 500,
+    personal_auto: r.personal_auto === undefined || r.personal_auto === null ? true : bool(r.personal_auto),
     savings_fixed: num(r.savings_fixed) ?? 400,
     savings_pct: num(r.savings_pct) ?? 0.25,
     tax_rate: num(r.tax_rate) ?? 0.3,

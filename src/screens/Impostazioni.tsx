@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { PHASES } from '../lib/types';
 import { useData } from '../state/data';
 import { useUi } from '../state/ui';
-import { DEFAULT_PROBS } from '../lib/finance';
+import { DEFAULT_PROBS, goals } from '../lib/finance';
 import { toBackup } from '../lib/backup';
 import { supabase } from '../lib/backend';
 import { Block, Screen } from '../ui/components';
@@ -65,7 +65,7 @@ export function Impostazioni({ email, onSignOut }: { email?: string; onSignOut?:
           </button></li>
           <li><button className="row" onClick={() => open({ type: 'params' })}>
             <span className="row-main"><span className="row-title">Obiettivi e tasse</span>
-              <span className="row-sub">{eur(s.personal_income)} per te, risparmio {eur(s.savings_fixed)} o {pct(s.savings_pct)}, tasse {pct(s.tax_rate)}</span></span>
+              <span className="row-sub">{s.personal_auto ? `Per te le spese personali (${eur(goals(data, today).personalCosts)})` : `${eur(s.personal_income)} per te`}, risparmio {eur(s.savings_fixed)} o {pct(s.savings_pct)}, tasse {pct(s.tax_rate)}</span></span>
           </button></li>
           <li><button className="row" onClick={() => open({ type: 'probs' })}>
             <span className="row-main"><span className="row-title">Probabilità per fase</span>

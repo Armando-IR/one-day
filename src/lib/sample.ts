@@ -11,7 +11,7 @@ export function sampleData(): Data {
   const id = () => `s${++n}`;
   return {
     settings: {
-      ce_start: `${today.slice(0, 4)}-01-01`, cf_start: month, cf_opening: 2500, personal_income: 500,
+      ce_start: `${today.slice(0, 4)}-01-01`, cf_start: month, cf_opening: 2500, personal_income: 500, personal_auto: true,
       savings_fixed: 400, savings_pct: 0.25, tax_rate: 0.3, phase_probs: { ...DEFAULT_PROBS },
     },
     invoices: [

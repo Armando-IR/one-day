@@ -29,6 +29,7 @@ export function defaultSettings(today = todayYMD()): Settings {
     cf_start: `${today.slice(0, 7)}-01`,
     cf_opening: null,
     personal_income: 500,
+    personal_auto: true,
     savings_fixed: 400,
     savings_pct: 0.25,
     tax_rate: 0.3,
@@ -59,6 +60,7 @@ const ORDER: Record<TableName, string> = {
  * still waiting for the update says so at once, instead of at the first save.
  */
 const NEWER_COLUMNS = 'due_month,start_month,end_month';
+const NEWER_SETTINGS = 'personal_auto';
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
@@ -70,13 +72,15 @@ export class SupabaseBackend implements Backend {
   constructor(private sb: SupabaseClient, private userId: string) {}
 
   async load(): Promise<Data> {
-    const [settingsRes, columnsRes, ...tableRes] = await Promise.all([
+    const [settingsRes, columnsRes, settingsColsRes, ...tableRes] = await Promise.all([
       this.sb.from('settings').select('*').maybeSingle(),
       this.sb.from('fixed_costs').select(NEWER_COLUMNS).limit(1),
+      this.sb.from('settings').select(NEWER_SETTINGS).limit(1),
       ...TABLES.map((t) => this.sb.from(t).select('*').order(ORDER[t], { ascending: true })),
     ]);
     let settings = check(settingsRes) as Record<string, unknown> | null;
     check(columnsRes);
+    check(settingsColsRes);
     if (!settings) settings = (await this.saveSettings(defaultSettings())) as unknown as Record<string, unknown>;
     const out: Record<string, unknown> = { settings };
     TABLES.forEach((t, i) => (out[t] = check(tableRes[i] as { data: unknown[]; error: { message: string } | null })));

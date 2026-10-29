@@ -206,6 +206,10 @@ export function cashflow(d: Data, until?: string): { months: CashMonth[]; lateCr
 
 // ---------------------------------------------------------------- goals
 export interface Goals {
+  /** "Quanto vuoi per te" used for the goals: the personal expenses of the month, or the amount written by hand. */
+  personal: number;
+  /** True when `personal` comes from the expenses. */
+  personalAuto: boolean;
   business: number;
   /** Recurring incomes that are not invoices: they lower what work has to bring in. */
   otherIncome: number;
@@ -232,15 +236,18 @@ export const oneOffSaving = (c: FixedCost, today: string) => (isOneOff(c) ? mont
 export function goals(d: Data, today: string): Goals {
   const s: Settings = d.settings;
   const t = n(s.tax_rate);
-  const p = n(s.personal_income);
+  const personalAuto = s.personal_auto;
   const business = monthlyCosts(d, 'lavoro', today);
   const oi = monthlyIncome(d, today);
   // what work has to bring in, net, once the other incomes are counted
   const fromWork = (need: number) => Math.max(0, need - oi) / (1 - t) + business;
   const personalCosts = monthlyCosts(d, 'personale', today);
+  const p = personalAuto ? personalCosts : n(s.personal_income);
   const wishesMonthly = sum(d.wishes.filter((w) => w.planned).map((w) => wishMonthly(w, today)));
   const oneOffMonthly = sum(d.fixed_costs.filter((c) => c.active).map((c) => oneOffSaving(c, today)));
   return {
+    personal: p,
+    personalAuto,
     business,
     otherIncome: oi,
     personalCosts,
@@ -282,6 +289,8 @@ export function projections(d: Data, today: string) {
     return {
       n: q + 1,
       total: sum(ms.map((m) => m.margin)),
+      first: ms[0].month,
+      last: ms[2].month,
       started: !ms[0].future,
       complete: monthIdx(ms[2].month) < now,
     };
