@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import type { FixedCost, Scope } from '../lib/types';
+import type { FixedCost, Income, Scope } from '../lib/types';
 import { useData } from '../state/data';
 import { useUi } from '../state/ui';
-import { activeCosts, cashInMonth, isOneOff, monthlyCosts, monthlyEquivalent, oneOffSaving, runsIn, sum } from '../lib/finance';
+import { activeCosts, cashInMonth, isOneOff, monthlyCosts, monthlyEquivalent, monthlyIncome, oneOffSaving, runsIn, sum } from '../lib/finance';
 import { addMonths, monthIdx, monthOf } from '../lib/dates';
 import { Block } from '../ui/components';
 import { eur, eurAuto, monthLong, monthNameByNumber, prepA } from '../ui/format';
@@ -35,6 +35,29 @@ function costSub(c: FixedCost, today: string) {
     : c.pay_month ? `${eurAuto(c.amount)} ${prepA(monthNameByNumber(c.pay_month))}` : `${eurAuto(c.amount)} l'anno, mese da inserire`;
   const range = rangeText(c);
   return range ? `${base}, ${range}` : base;
+}
+
+/** An income that is not an invoice: salary, pension, a rent received. */
+function IncomeRow({ x }: { x: Income }) {
+  const { today } = useData();
+  const { open } = useUi();
+  const oneOff = isOneOff(x);
+  const sub = costSub({ ...x, scope: 'personale', family: null }, today);
+  const past = oneOff && !!x.due_month && monthIdx(x.due_month) < monthIdx(today);
+  const dim = oneOff ? !x.active || past : !(x.active && runsIn(x, today));
+  return (
+    <li>
+      <button className="row" onClick={() => open({ type: 'income', initial: x })}>
+        <span className="row-main">
+          <span className={`row-title ${dim ? 'muted' : ''}`}>{x.name}</span>
+          <span className="row-sub">{sub}</span>
+        </span>
+        <span className={`row-end ${dim ? 'muted' : ''}`}>
+          {!x.amount ? <span className="badge todo">Inserisci</span> : <span className="num pos">+{eurAuto(oneOff ? x.amount : monthlyEquivalent(x))}</span>}
+        </span>
+      </button>
+    </li>
+  );
 }
 
 function CostRow({ c }: { c: FixedCost }) {
@@ -103,8 +126,23 @@ export function Spese() {
     return sum(activeCosts(data, scope).flatMap((c) => ms.map((m) => cashInMonth(c, m))));
   };
 
+  const incomes = [...data.incomes].sort((a, b) => Number(isOneOff(a)) - Number(isOneOff(b)) || a.name.localeCompare(b.name));
   return (
     <>
+      <Block title="Entrate" action={<button className="link-btn" onClick={() => open({ type: 'income' })}>Aggiungi</button>}>
+        {incomes.length ? (
+          <>
+            <p className="muted small" style={{ marginTop: 0 }}>
+              Oggi fanno <span className="num">{eur(monthlyIncome(data, today))}</span> al mese. Sono le entrate che non sono fatture,
+              già nette: abbassano il minimo da guadagnare con il lavoro.
+            </p>
+            <ul className="list panel">{incomes.map((x) => <IncomeRow key={x.id} x={x} />)}</ul>
+          </>
+        ) : (
+          <p className="panel empty">Nessuna entrata fissa. Se hai uno stipendio, una pensione o un affitto che ricevi, aggiungilo qui.</p>
+        )}
+      </Block>
+
       <Block title="Spese personali" action={<button className="link-btn" onClick={() => open({ type: 'cost', scope: 'personale' })}>Aggiungi</button>}>
         <p className="muted small" style={{ marginTop: 0 }}>
           Oggi fanno <span className="num">{eur(monthlyCosts(data, 'personale', today))}</span> al mese,

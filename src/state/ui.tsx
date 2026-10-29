@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Debt, FixedCost, Invoice, Kind, Pipeline, Saving, Scope, Tax, Wish } from '../lib/types';
+import type { Debt, FixedCost, Income, Invoice, Kind, Pipeline, Saving, Scope, Tax, Wish } from '../lib/types';
 
 export type Tab = 'home' | 'lavori' | 'piani' | 'conti' | 'impostazioni' | 'analisi';
 export type LavoriFilter = 'incassare' | 'pagare' | 'tutte';
@@ -10,6 +10,7 @@ export type SheetState =
   | { type: 'add' }
   | { type: 'invoice'; kind: Kind; initial?: Invoice }
   | { type: 'cost'; scope: Scope; initial?: FixedCost }
+  | { type: 'income'; initial?: Income }
   | { type: 'debt'; initial?: Debt }
   | { type: 'tax'; initial?: Tax }
   | { type: 'pipeline'; initial?: Pipeline }

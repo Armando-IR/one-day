@@ -46,6 +46,7 @@ export const supabase: SupabaseClient | null = url && key ? createClient(url, ke
 const ORDER: Record<TableName, string> = {
   invoices: 'invoice_date',
   fixed_costs: 'name',
+  incomes: 'name',
   debts: 'name',
   taxes: 'due_date',
   pipeline: 'expected_month',

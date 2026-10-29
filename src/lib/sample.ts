@@ -30,6 +30,9 @@ export function sampleData(): Data {
       { id: id(), scope: 'personale', family: 'Altro', name: 'Regalo di nozze', amount: 250, frequency: 'una_tantum', pay_month: null, due_month: addMonths(month, 3), start_month: null, end_month: null, active: true, note: 'Lista nozze in agenzia.' },
       { id: id(), scope: 'lavoro', family: null, name: 'Software', amount: 30, frequency: 'mensile', pay_month: null, due_month: null, start_month: null, end_month: null, active: true, note: null },
     ],
+    incomes: [
+      { id: id(), name: 'Affitto del box', amount: 80, frequency: 'mensile', pay_month: null, due_month: null, start_month: null, end_month: null, active: true, note: 'Lo paga il vicino il 10 del mese.' },
+    ],
     debts: [{ id: id(), name: 'Computer portatile', installment: 60, first_month: addMonths(month, -2), last_month: addMonths(month, 6), note: 'Finanziamento a tasso zero, addebito sulla carta.' }],
     taxes: [{ id: id(), due_date: addDays(addMonths(month, 1), 29), description: 'Acconto', amount: 900, note: 'Importo indicato dal commercialista.' }],
     pipeline: [

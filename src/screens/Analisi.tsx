@@ -24,6 +24,7 @@ export function Analisi() {
       case 'opening': return open({ type: 'opening' });
       case 'cost': return open({ type: 'cost', scope: t.row.scope, initial: t.row });
       case 'debt': return open({ type: 'debt', initial: t.row });
+      case 'income': return open({ type: 'income', initial: t.row });
       case 'tax': return open({ type: 'tax', initial: t.row });
       case 'invoice': return open({ type: 'invoice', kind: t.row.kind, initial: t.row });
       case 'params': return open({ type: 'params' });

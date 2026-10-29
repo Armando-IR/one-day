@@ -1,6 +1,9 @@
 // All the money logic of the app, ported from the "Personal Finance 2026" spreadsheet.
 // Pure functions: easy to test, no React, no database.
-import type { Data, Debt, FixedCost, Invoice, Phase, Pipeline, Settings, Tax, Wish } from './types';
+import type { Data, Debt, FixedCost, Income, Invoice, Phase, Pipeline, Settings, Tax, Wish } from './types';
+
+/** What expenses and incomes have in common: how much, how often, from when to when. */
+type Recurring = Pick<FixedCost, 'amount' | 'frequency' | 'pay_month' | 'due_month' | 'start_month' | 'end_month'>;
 import { addDays, addMonths, daysBetween, firstOfMonth, idxToMonth, inMonth, monthIdx, monthOf, months, pad, parseYMD } from './dates';
 
 export const DEFAULT_PROBS: Record<Phase, number> = {
@@ -15,16 +18,16 @@ export const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 const n = (x: number | null | undefined) => (typeof x === 'number' && Number.isFinite(x) ? x : 0);
 
 // ---------------------------------------------------------------- expenses: every month, once a year, or once
-export const isOneOff = (c: FixedCost) => c.frequency === 'una_tantum';
+export const isOneOff = (c: Pick<FixedCost, 'frequency'>) => c.frequency === 'una_tantum';
 
 /** The recurring cost per month: yearly ones divided by 12. One-off expenses are not recurring: 0. */
-export function monthlyEquivalent(c: FixedCost): number {
+export function monthlyEquivalent(c: Recurring): number {
   if (isOneOff(c)) return 0;
   return c.frequency === 'annuale' ? n(c.amount) / 12 : n(c.amount);
 }
 
 /** Does a recurring expense run in this month, between its first and last month (when they are set)? */
-export function runsIn(c: FixedCost, month: string): boolean {
+export function runsIn(c: Pick<FixedCost, 'start_month' | 'end_month'>, month: string): boolean {
   const i = monthIdx(month);
   if (c.start_month && i < monthIdx(c.start_month)) return false;
   if (c.end_month && i > monthIdx(c.end_month)) return false;
@@ -48,7 +51,7 @@ export function yearlyPayments(payMonth: number, today: string, start: string | 
   return count > 0 ? { first, count } : null;
 }
 
-export function cashInMonth(c: FixedCost, month: string): number {
+export function cashInMonth(c: Recurring, month: string): number {
   if (isOneOff(c)) return inMonth(c.due_month, month) ? n(c.amount) : 0;
   if (!runsIn(c, month)) return 0;
   if (c.frequency !== 'annuale') return n(c.amount);
@@ -64,6 +67,15 @@ export const activeCosts = (d: Data, scope: FixedCost['scope']) =>
 export const oneOffIn = (d: Data, month: string, scope?: FixedCost['scope']) =>
   sum(d.fixed_costs.filter((c) => c.active && isOneOff(c) && (!scope || c.scope === scope)).map((c) => cashInMonth(c, month)));
 
+/** Incomes (not invoices) coming in during a month: every month, once a year, or once. */
+export const incomeIn = (d: Data, month: string) => sum(d.incomes.filter((x) => x.active).map((x) => cashInMonth(x, month)));
+/** Recurring incomes per month (yearly ones divided by 12), counting only those running in that month. */
+export const monthlyIncome = (d: Data, month: string) =>
+  sum(d.incomes.filter((x) => x.active && !isOneOff(x) && runsIn(x, month)).map(monthlyEquivalent));
+/** One-off incomes falling in a month. */
+const oneOffIncomeIn = (d: Data, month: string) =>
+  sum(d.incomes.filter((x) => x.active && isOneOff(x)).map((x) => cashInMonth(x, month)));
+
 /** Recurring cost per month of a scope, counting only the expenses running in that month. */
 export const monthlyCosts = (d: Data, scope: FixedCost['scope'], month: string) =>
   sum(activeCosts(d, scope).filter((c) => runsIn(c, month)).map(monthlyEquivalent));
@@ -77,6 +89,8 @@ export interface EconomicMonth {
   speseLavoro: number;
   tasse: number;
   nettoLavoro: number;
+  /** Incomes that are not invoices: already net, so they do not change the estimated taxes. */
+  altreEntrate: number;
   spesePersonali: number;
   resta: number;
   restaCumulato: number;
@@ -96,13 +110,14 @@ export function economic(d: Data): { months: EconomicMonth[]; totals: EconomicTo
     const speseLavoro = -monthlyCosts(d, 'lavoro', m) - oneOffIn(d, m, 'lavoro');
     const tasse = -t * (margine + speseLavoro);
     const nettoLavoro = margine + speseLavoro + tasse;
+    const altreEntrate = monthlyIncome(d, m) + oneOffIncomeIn(d, m);
     const spesePersonali = -monthlyCosts(d, 'personale', m) - oneOffIn(d, m, 'personale');
-    const resta = nettoLavoro + spesePersonali;
+    const resta = nettoLavoro + altreEntrate + spesePersonali;
     cum += resta;
-    return { month: m, ricavi, collaboratori, margine, speseLavoro, tasse, nettoLavoro, spesePersonali, resta, restaCumulato: cum };
+    return { month: m, ricavi, collaboratori, margine, speseLavoro, tasse, nettoLavoro, altreEntrate, spesePersonali, resta, restaCumulato: cum };
   });
   const keys: (keyof EconomicTotals)[] = [
-    'ricavi', 'collaboratori', 'margine', 'speseLavoro', 'tasse', 'nettoLavoro', 'spesePersonali', 'resta',
+    'ricavi', 'collaboratori', 'margine', 'speseLavoro', 'tasse', 'nettoLavoro', 'altreEntrate', 'spesePersonali', 'resta',
   ];
   const totals = Object.fromEntries(keys.map((k) => [k, sum(rows.map((r) => r[k]))])) as unknown as EconomicTotals;
   return { months: rows, totals };
@@ -113,6 +128,8 @@ export interface CashMonth {
   month: string;
   opening: number;
   incassi: number;
+  /** Incomes that are not invoices: salary, pension… */
+  entrate: number;
   collaboratori: number;
   speseLavoro: number;
   spesePersonali: number;
@@ -153,8 +170,9 @@ export function cashflow(d: Data, until?: string): { months: CashMonth[]; lateCr
     const tasse = -sum(d.taxes.filter((x) => inMonth(x.due_date, m)).map((x) => n(x.amount)));
     const unaTantum = -oneOffIn(d, m);
     const desideri = -sum(d.wishes.filter((w) => w.planned && inMonth(w.target_month, m)).map((w) => n(w.cost)));
-    const closing = opening + incassi + collaboratori + speseLavoro + spesePersonali + rate + tasse + unaTantum + desideri;
-    const row = { month: m, opening, incassi, collaboratori, speseLavoro, spesePersonali, rate, tasse, unaTantum, desideri, closing };
+    const entrate = incomeIn(d, m);
+    const closing = opening + incassi + entrate + collaboratori + speseLavoro + spesePersonali + rate + tasse + unaTantum + desideri;
+    const row = { month: m, opening, incassi, entrate, collaboratori, speseLavoro, spesePersonali, rate, tasse, unaTantum, desideri, closing };
     opening = closing;
     return row;
   });
@@ -169,6 +187,8 @@ export function cashflow(d: Data, until?: string): { months: CashMonth[]; lateCr
 // ---------------------------------------------------------------- goals
 export interface Goals {
   business: number;
+  /** Recurring incomes that are not invoices: they lower what work has to bring in. */
+  otherIncome: number;
   personalCosts: number;
   wishesMonthly: number;
   oneOffMonthly: number;
@@ -194,19 +214,23 @@ export function goals(d: Data, today: string): Goals {
   const t = n(s.tax_rate);
   const p = n(s.personal_income);
   const business = monthlyCosts(d, 'lavoro', today);
+  const oi = monthlyIncome(d, today);
+  // what work has to bring in, net, once the other incomes are counted
+  const fromWork = (need: number) => Math.max(0, need - oi) / (1 - t) + business;
   const personalCosts = monthlyCosts(d, 'personale', today);
   const wishesMonthly = sum(d.wishes.filter((w) => w.planned).map((w) => wishMonthly(w, today)));
   const oneOffMonthly = sum(d.fixed_costs.filter((c) => c.active).map((c) => oneOffSaving(c, today)));
   return {
     business,
+    otherIncome: oi,
     personalCosts,
     wishesMonthly,
     oneOffMonthly,
-    baseline: p / (1 - t) + business,
-    plusPct: p / (1 - n(s.savings_pct)) / (1 - t) + business,
-    plusFixed: (p + n(s.savings_fixed)) / (1 - t) + business,
+    baseline: fromWork(p),
+    plusPct: fromWork(p / (1 - n(s.savings_pct))),
+    plusFixed: fromWork(p + n(s.savings_fixed)),
     // what you want for yourself, plus what to put aside for one-off expenses and planned wishes
-    plusWishes: (p + oneOffMonthly + wishesMonthly) / (1 - t) + business,
+    plusWishes: fromWork(p + oneOffMonthly + wishesMonthly),
     covers: p >= personalCosts,
   };
 }
@@ -435,7 +459,7 @@ export function installmentsBetween(d: Data, from: string, to: string) {
 export interface Movement {
   /** 'YYYY-MM-DD'. Installments, one-off and yearly expenses and wishes are on the 1st of their month. */
   date: string;
-  kind: 'incasso' | 'pagamento' | 'f24' | 'rata' | 'una_tantum' | 'annuale' | 'desiderio';
+  kind: 'incasso' | 'pagamento' | 'f24' | 'rata' | 'una_tantum' | 'annuale' | 'desiderio' | 'entrata';
   text: string;
   /** Money in is positive, money out negative. Null: an F24 whose amount is still missing. */
   amount: number | null;
@@ -445,6 +469,7 @@ export interface Movement {
   cost?: FixedCost;
   debts?: Debt[];
   wish?: Wish;
+  income?: Income;
 }
 
 /**
@@ -483,6 +508,16 @@ export function movementsBetween(d: Data, from: string, to: string, openOnly = f
       amount: -r.amount, debts: r.debts,
     });
   }
+  for (const x of d.incomes.filter((y) => y.active)) {
+    if (isOneOff(x)) {
+      if (within(x.due_month)) out.push({ date: x.due_month, kind: 'entrata', text: x.name, amount: n(x.amount), income: x });
+    } else if (x.frequency === 'annuale' && x.pay_month != null) {
+      for (let k = monthIdx(from); k <= monthIdx(to); k++) {
+        const m = idxToMonth(k);
+        if (within(m) && monthOf(m) === x.pay_month && runsIn(x, m)) out.push({ date: m, kind: 'entrata', text: x.name, amount: n(x.amount), income: x });
+      }
+    }
+  }
   for (const w of d.wishes) {
     if (w.planned && within(w.target_month)) out.push({ date: w.target_month, kind: 'desiderio', text: w.name, amount: -n(w.cost), wish: w });
   }
@@ -500,13 +535,17 @@ export function monthStatement(d: Data, month: string) {
   const items = movementsBetween(d, first, addDays(addMonths(first, 1), -1));
   const yearlyListed = sum(items.filter((x) => x.kind === 'annuale').map((x) => -(x.amount ?? 0)));
   const recurring = -(sum([...activeCosts(d, 'personale'), ...activeCosts(d, 'lavoro')].map((c) => cashInMonth(c, first))) - yearlyListed);
-  const amounts = [...items.map((x) => x.amount ?? 0), recurring];
+  // incomes of every month in one line too (the yearly ones with their month are listed above)
+  const incomesListed = sum(items.filter((x) => x.kind === 'entrata' && x.income && !isOneOff(x.income)).map((x) => x.amount ?? 0));
+  const recurringIn = sum(d.incomes.filter((x) => x.active && !isOneOff(x)).map((x) => cashInMonth(x, first))) - incomesListed;
+  const amounts = [...items.map((x) => x.amount ?? 0), recurring, recurringIn];
   return {
     month: first,
     opening: row ? row.opening : null,
     closing: row ? row.closing : null,
     items,
     recurring,
+    recurringIn,
     in: sum(amounts.filter((a) => a > 0)),
     out: sum(amounts.filter((a) => a < 0)),
   };
@@ -531,6 +570,7 @@ export function clients(d: Data) {
 export type FixTarget =
   | { kind: 'opening' }
   | { kind: 'cost'; row: FixedCost }
+  | { kind: 'income'; row: Income }
   | { kind: 'debt'; row: Debt }
   | { kind: 'tax'; row: Tax };
 
@@ -544,6 +584,9 @@ export function toComplete(d: Data, today: string) {
   d.fixed_costs
     .filter((c) => c.active && c.amount > 0 && c.frequency === 'annuale' && c.pay_month == null)
     .forEach((c) => items.push({ label: `Mese di pagamento di «${c.name}»`, target: { kind: 'cost', row: c } }));
+  d.incomes
+    .filter((x) => x.active && !x.amount)
+    .forEach((x) => items.push({ label: `Importo di «${x.name}»`, target: { kind: 'income', row: x } }));
   d.debts
     .filter((x) => !x.installment || !x.first_month || !x.last_month)
     .forEach((x) => items.push({ label: `Dati della rata «${x.name}»`, target: { kind: 'debt', row: x } }));

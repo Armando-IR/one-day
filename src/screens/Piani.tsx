@@ -168,6 +168,7 @@ function Obiettivi() {
         <p className="muted small">
           Margine vuol dire ricavi meno collaboratori. Dipende da quanto vuoi per te ({eur(s.personal_income)} al mese),
           dalle spese di lavoro ({eur(g.business)} al mese) e dalle tasse ({pct(s.tax_rate)}).
+          {g.otherIncome > 0.5 && ` Le altre entrate (${eur(g.otherIncome)} al mese, come stipendio o pensione) lo abbassano: coprono già una parte di quello che vuoi per te.`}
         </p>
       </Block>
 

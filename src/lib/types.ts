@@ -38,6 +38,23 @@ export interface FixedCost {
   note: string | null;
 }
 
+/**
+ * Money coming in that is not an invoice: salary, pension, a rent you receive, a gift. Net amount, as it
+ * arrives on the account. Like an expense: every month, once a year, or once, with a first and last month.
+ */
+export interface Income {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: Frequency;
+  pay_month: number | null;
+  due_month: string | null;
+  start_month: string | null;
+  end_month: string | null;
+  active: boolean;
+  note: string | null;
+}
+
 export interface Debt {
   id: string;
   name: string;
@@ -99,6 +116,7 @@ export interface Data {
   settings: Settings;
   invoices: Invoice[];
   fixed_costs: FixedCost[];
+  incomes: Income[];
   debts: Debt[];
   taxes: Tax[];
   pipeline: Pipeline[];
@@ -106,14 +124,15 @@ export interface Data {
   savings: Saving[];
 }
 
-export type TableName = 'invoices' | 'fixed_costs' | 'debts' | 'taxes' | 'pipeline' | 'wishes' | 'savings';
+export type TableName = 'invoices' | 'fixed_costs' | 'incomes' | 'debts' | 'taxes' | 'pipeline' | 'wishes' | 'savings';
 
 export type RowOf<T extends TableName> = T extends 'invoices' ? Invoice
   : T extends 'fixed_costs' ? FixedCost
+  : T extends 'incomes' ? Income
   : T extends 'debts' ? Debt
   : T extends 'taxes' ? Tax
   : T extends 'pipeline' ? Pipeline
   : T extends 'wishes' ? Wish
   : Saving;
 
-export const TABLES: TableName[] = ['invoices', 'fixed_costs', 'debts', 'taxes', 'pipeline', 'wishes', 'savings'];
+export const TABLES: TableName[] = ['invoices', 'fixed_costs', 'incomes', 'debts', 'taxes', 'pipeline', 'wishes', 'savings'];

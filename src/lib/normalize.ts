@@ -1,5 +1,5 @@
 // Turns rows coming from the database (or from a backup file) into clean typed objects.
-import type { Data, Debt, FixedCost, Frequency, Invoice, Phase, Pipeline, Saving, Settings, TableName, Tax, Wish } from './types';
+import type { Data, Debt, FixedCost, Frequency, Income, Invoice, Phase, Pipeline, Saving, Settings, TableName, Tax, Wish } from './types';
 import { PHASES } from './types';
 import { DEFAULT_PROBS } from './finance';
 
@@ -28,6 +28,13 @@ export function normalizeRow(table: TableName, raw: unknown) {
         pay_month: num(r.pay_month), due_month: day(r.due_month), start_month: day(r.start_month), end_month: day(r.end_month),
         active: r.active === undefined ? true : bool(r.active), note: str(r.note),
       } satisfies FixedCost;
+    case 'incomes':
+      return {
+        id: id(r), name: String(r.name ?? ''), amount: req(r.amount),
+        frequency: (['annuale', 'una_tantum'].includes(String(r.frequency)) ? r.frequency : 'mensile') as Frequency,
+        pay_month: num(r.pay_month), due_month: day(r.due_month), start_month: day(r.start_month), end_month: day(r.end_month),
+        active: r.active === undefined ? true : bool(r.active), note: str(r.note),
+      } satisfies Income;
     case 'debts':
       return {
         id: id(r), name: String(r.name ?? ''), installment: num(r.installment), first_month: day(r.first_month),
@@ -78,6 +85,7 @@ export function normalizeData(raw: unknown): Data {
     settings: normalizeSettings(r.settings),
     invoices: list('invoices') as Invoice[],
     fixed_costs: list('fixed_costs') as FixedCost[],
+    incomes: list('incomes') as Income[],
     debts: list('debts') as Debt[],
     taxes: list('taxes') as Tax[],
     pipeline: list('pipeline') as Pipeline[],

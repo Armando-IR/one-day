@@ -20,6 +20,7 @@ function Line({ label, value, total }: { label: string; value: number; total?: b
 function CashCard({ m, probable, open, onToggle }: { m: CashMonth; probable: number | null; open: boolean; onToggle: () => void }) {
   const lines: [string, number][] = [
     ['Incassi dai clienti', m.incassi],
+    ['Altre entrate', m.entrate],
     ['Pagamenti ai collaboratori', m.collaboratori],
     ['Spese di lavoro', m.speseLavoro],
     ['Spese personali', m.spesePersonali],
@@ -62,6 +63,7 @@ function EconomicCard({ m, open, onToggle }: { m: EconomicMonth; open: boolean; 
           <Line label="Margine" value={m.margine} total />
           <Line label="Spese di lavoro" value={m.speseLavoro} />
           <Line label="Tasse stimate" value={m.tasse} />
+          {Math.abs(m.altreEntrate) > 0.004 && <Line label="Altre entrate" value={m.altreEntrate} />}
           <Line label="Spese personali" value={m.spesePersonali} />
           <Line label="Ti resta" value={m.resta} total />
         </div>
@@ -131,6 +133,7 @@ function Economico() {
           <Line label="Spese di lavoro" value={t.speseLavoro} />
           <Line label={`Tasse stimate (${pct(data.settings.tax_rate)})`} value={t.tasse} />
           <Line label="Netto dal lavoro" value={t.nettoLavoro} total />
+          {Math.abs(t.altreEntrate) > 0.004 && <Line label="Altre entrate (nette)" value={t.altreEntrate} />}
           <Line label="Spese personali" value={t.spesePersonali} />
           <Line label="Ti resta" value={t.resta} total />
         </div>

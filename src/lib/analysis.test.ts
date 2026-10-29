@@ -35,6 +35,7 @@ const base: Data = {
   pipeline: [],
   wishes: [{ id: 'w1', name: 'Bici', cost: 600, priority: 'media', target_month: '2027-04-01', planned: true, note: null }],
   savings: [{ id: 's1', name: 'Libretto', amount: 500, note: null }],
+  incomes: [],
 };
 
 // bold marks out, and the no-break spaces of the euro amounts as plain spaces
@@ -81,12 +82,12 @@ describe('analisi della situazione', () => {
   });
 
   it('le spese: cosa cambia e cosa manca', () => {
-    const t = section(base, 'Le spese');
+    const t = section(base, 'Entrate e spese');
     expect(t).toContain('Le spese personali di ogni mese sono 440 €, dentro i 500 € che vuoi per te.');
     expect(t).toContain('dopo gennaio 2027 non paghi più Palestra (40 € al mese)');
     expect(t).toContain('«Spese quotidiane» non ha ancora un importo');
     const course: Data = { ...base, fixed_costs: [...base.fixed_costs, cost({ family: 'Altro', name: 'Corso', amount: 60, start_month: '2026-12-01', end_month: '2027-03-01' })] };
-    expect(section(course, 'Le spese')).toContain('paghi Corso solo da dicembre 2026 a marzo 2027 (60 € al mese)');
+    expect(section(course, 'Entrate e spese')).toContain('paghi Corso solo da dicembre 2026 a marzo 2027 (60 € al mese)');
   });
 
   it('debiti e crediti', () => {

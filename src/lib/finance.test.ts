@@ -41,6 +41,7 @@ const data: Data = {
     { id: uid(), name: 'W2', cost: 1000, priority: 'bassa', target_month: '2027-06-01', planned: false, note: null },
   ],
   savings: [{ id: uid(), name: 'Libretto', amount: 300, note: null }],
+  incomes: [],
 };
 
 describe('conto economico', () => {
@@ -135,6 +136,59 @@ describe('spese con un mese di inizio e di fine', () => {
     expect(g.business).toBeCloseTo(140); // October: Studio runs
     expect(g.personalCosts).toBeCloseTo(30); // October: no rent yet
     expect(goals(ranged, '2026-12-10').business).toBeCloseTo(20);
+  });
+});
+
+describe('entrate che non sono fatture', () => {
+  const inc = (over: Partial<Data['incomes'][number]>): Data['incomes'][number] => ({
+    id: uid(), name: 'Entrata', amount: 0, frequency: 'mensile', pay_month: null, due_month: null,
+    start_month: null, end_month: null, active: true, note: null, ...over,
+  });
+  const withIncome: Data = {
+    ...data,
+    incomes: [
+      inc({ name: 'Pensione', amount: 300 }),
+      inc({ name: 'Rimborso', amount: 1000, frequency: 'una_tantum', due_month: '2026-12-01' }),
+      inc({ name: 'Premio', amount: 1200, frequency: 'annuale', pay_month: 3 }),
+      inc({ name: 'Vecchio affitto', amount: 200, end_month: '2026-09-01' }),
+    ],
+  };
+  it('entrano nel cashflow nel loro mese', () => {
+    const base = cashflow(data).months;
+    const m = cashflow(withIncome).months;
+    expect(m[0].entrate).toBe(300);
+    expect(m[2].entrate).toBe(1300);
+    expect(m[5].entrate).toBe(1500); // March: pension and yearly bonus
+    expect(m[2].closing - base[2].closing).toBeCloseTo(300 * 3 + 1000);
+  });
+  it('nel conto economico non cambiano le tasse', () => {
+    const e = economic(withIncome);
+    const e0 = economic(data);
+    expect(e.months[11].altreEntrate).toBeCloseTo(300 + 100 + 1000);
+    expect(e.months[11].tasse).toBeCloseTo(e0.months[11].tasse);
+    expect(e.months[11].resta - e0.months[11].resta).toBeCloseTo(1400);
+    expect(e.months[0].altreEntrate).toBeCloseTo(300 + 100 + 200); // January: the old rent still ran
+  });
+  it('abbassano il minimo da guadagnare', () => {
+    const g = goals(withIncome, TODAY);
+    expect(g.otherIncome).toBeCloseTo(400); // 300 + 1200 / 12; the old rent has ended
+    expect(g.baseline).toBeCloseTo(100 / 0.7 + 140);
+    const rich: Data = { ...withIncome, incomes: [inc({ name: 'Stipendio', amount: 2000 })] };
+    expect(goals(rich, TODAY).baseline).toBeCloseTo(140); // never below the work expenses
+  });
+  it('nel mese: in una riga quelle di ogni mese, una per una le altre', () => {
+    const st = monthStatement(withIncome, '2026-12-01');
+    expect(st.recurringIn).toBeCloseTo(300); // the yearly bonus is paid in March, not spread
+    expect(st.items.filter((x) => x.kind === 'entrata').map((x) => [x.text, x.amount])).toEqual([['Rimborso', 1000]]);
+    for (const m of cashflow(withIncome).months) {
+      const x = monthStatement(withIncome, m.month);
+      expect(x.opening! + x.in + x.out).toBeCloseTo(x.closing!);
+    }
+    expect(monthStatement(withIncome, '2027-03-01').items.some((x) => x.text === 'Premio')).toBe(true);
+  });
+  it('senza importo va completata', () => {
+    const t = toComplete({ ...data, incomes: [inc({ name: 'Stipendio' })] }, TODAY);
+    expect(t.some((x) => x.target.kind === 'income' && x.label === 'Importo di «Stipendio»')).toBe(true);
   });
 });
 

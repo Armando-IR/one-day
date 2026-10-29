@@ -63,6 +63,22 @@ alter table public.fixed_costs drop constraint if exists fixed_costs_frequency_c
 alter table public.fixed_costs add constraint fixed_costs_frequency_check
   check (frequency in ('mensile', 'annuale', 'una_tantum'));
 
+-- Entrate che non sono fatture: stipendio, pensione, un affitto che ricevi (importo netto)
+create table if not exists public.incomes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name text not null,
+  amount numeric not null default 0 check (amount >= 0),
+  frequency text not null default 'mensile' check (frequency in ('mensile', 'annuale', 'una_tantum')),
+  pay_month int check (pay_month between 1 and 12),
+  due_month date,
+  start_month date,
+  end_month date,
+  active boolean not null default true,
+  note text,
+  created_at timestamptz not null default now()
+);
+
 -- Rate
 create table if not exists public.debts (
   id uuid primary key default gen_random_uuid(),
@@ -126,6 +142,7 @@ create table if not exists public.savings (
 
 create index if not exists invoices_user_idx on public.invoices (user_id);
 create index if not exists fixed_costs_user_idx on public.fixed_costs (user_id);
+create index if not exists incomes_user_idx on public.incomes (user_id);
 create index if not exists debts_user_idx on public.debts (user_id);
 create index if not exists taxes_user_idx on public.taxes (user_id);
 create index if not exists pipeline_user_idx on public.pipeline (user_id);
@@ -136,7 +153,7 @@ create index if not exists savings_user_idx on public.savings (user_id);
 do $$
 declare t text;
 begin
-  foreach t in array array['settings', 'invoices', 'fixed_costs', 'debts', 'taxes', 'pipeline', 'wishes', 'savings'] loop
+  foreach t in array array['settings', 'invoices', 'fixed_costs', 'incomes', 'debts', 'taxes', 'pipeline', 'wishes', 'savings'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "solo i miei dati" on public.%I', t);
     execute format(
@@ -148,11 +165,11 @@ end $$;
 -- Permessi per l'app (solo utenti con login; i visitatori anonimi non vedono nulla)
 grant usage on schema public to authenticated;
 grant select, insert, update, delete
-  on public.settings, public.invoices, public.fixed_costs, public.debts, public.taxes, public.pipeline, public.wishes,
+  on public.settings, public.invoices, public.fixed_costs, public.incomes, public.debts, public.taxes, public.pipeline, public.wishes,
      public.savings
   to authenticated;
 revoke all
-  on public.settings, public.invoices, public.fixed_costs, public.debts, public.taxes, public.pipeline, public.wishes,
+  on public.settings, public.invoices, public.fixed_costs, public.incomes, public.debts, public.taxes, public.pipeline, public.wishes,
      public.savings
   from anon;
 

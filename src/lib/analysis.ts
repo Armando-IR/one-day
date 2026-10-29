@@ -196,6 +196,13 @@ export function analysis(d: Data, today: string): Analysis {
   // ------------------------------------------------ expenses
   const spese: string[] = [];
   const mine = s.personal_income;
+  if (g.otherIncome > 0.5) {
+    spese.push(`Le altre entrate di ogni mese (stipendio, pensione, affitti) sono **${eur(g.otherIncome)}**: coprono già una parte di quello che vuoi per te, quindi il minimo da guadagnare con il lavoro è più basso.`);
+  }
+  const incomesAhead = d.incomes.filter((x) => x.active && isOneOff(x) && x.due_month && monthIdx(x.due_month) >= ci && monthIdx(x.due_month) < ci + 12);
+  if (incomesAhead.length) {
+    spese.push(`Nei prossimi 12 mesi arrivano anche **${eur(sum(incomesAhead.map((x) => x.amount)))}** di entrate una tantum (${list(incomesAhead.map((x) => x.name))}).`);
+  }
   if (personal > 0) {
     spese.push(`Le spese personali di ogni mese sono **${eur(personal)}**${
       mine > 0 ? (personal <= mine ? `, dentro i ${eur(mine)} che vuoi per te` : `: superano di **${eur(personal - mine)}** i ${eur(mine)} che vuoi per te`) : ''}.`);
@@ -318,7 +325,7 @@ export function analysis(d: Data, today: string): Analysis {
     sections: [
       { title: 'Il conto', points: conto },
       { title: 'Il lavoro', points: lavoro },
-      { title: 'Le spese', points: spese },
+      { title: 'Entrate e spese', points: spese },
       { title: 'Debiti e crediti', points: dc },
       { title: 'Desideri e risparmio', points: ds },
     ].filter((x) => x.points.length > 0),

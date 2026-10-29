@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Debt, FixedCost, Frequency, Invoice, Kind, Phase, Pipeline, Priority, Saving, Scope, Tax, Wish } from '../lib/types';
+import type { Debt, FixedCost, Frequency, Income, Invoice, Kind, Phase, Pipeline, Priority, Saving, Scope, Tax, Wish } from '../lib/types';
 import { PHASES } from '../lib/types';
 import { useData } from '../state/data';
 import { addDays, addMonths, fromMonthInput, monthIdx, toMonthInput } from '../lib/dates';
@@ -243,6 +243,91 @@ export function CostForm({ scope: scope0, initial, onClose }: { scope: Scope; in
 }
 
 // ---------------------------------------------------------------- debts
+// ---------------------------------------------------------------- incomes that are not invoices
+export function IncomeForm({ initial, onClose }: { initial?: Income; onClose: () => void }) {
+  const { add, edit, del, notify } = useData();
+  const [name, setName] = useState(initial?.name ?? '');
+  const [amount, setAmount] = useState<number | null>(initial?.amount ?? null);
+  const [frequency, setFrequency] = useState<Frequency>(initial?.frequency ?? 'mensile');
+  const [payMonth, setPayMonth] = useState<number | null>(initial?.pay_month ?? null);
+  const [dueMonth, setDueMonth] = useState(toMonthInput(initial?.due_month ?? null));
+  const [startMonth, setStartMonth] = useState(toMonthInput(initial?.start_month ?? null));
+  const [endMonth, setEndMonth] = useState(toMonthInput(initial?.end_month ?? null));
+  const [active, setActive] = useState(initial?.active ?? true);
+  const [note, setNote] = useState(initial?.note ?? '');
+  const { saving, error, setError, run } = useSave();
+  const due = fromMonthInput(dueMonth);
+  const start = fromMonthInput(startMonth);
+  const end = fromMonthInput(endMonth);
+
+  const save = () => {
+    if (!name.trim()) return setError("Scrivi il nome dell'entrata.");
+    if (frequency === 'una_tantum' && !due) return setError("Scegli il mese dell'entrata.");
+    if (frequency !== 'una_tantum' && start && end && end < start) return setError("L'ultimo mese viene prima del primo.");
+    const row = {
+      name: name.trim(), amount: amount ?? 0, frequency,
+      pay_month: frequency === 'annuale' ? payMonth : null,
+      due_month: frequency === 'una_tantum' ? due : null,
+      start_month: frequency === 'una_tantum' ? null : start,
+      end_month: frequency === 'una_tantum' ? null : end,
+      active, note: blank(note),
+    };
+    void run(async () => {
+      if (initial) return edit('incomes', initial.id, row);
+      const ok = !!(await add('incomes', row));
+      if (ok) notify('Entrata aggiunta');
+      return ok;
+    }, onClose);
+  };
+
+  return (
+    <Sheet title={initial ? 'Modifica entrata' : 'Entrata'} onClose={onClose}>
+      <Field label="Entrata">
+        <TextInput value={name} onChange={setName} placeholder="Per esempio Stipendio, Pensione, Affitto" autoFocus={!initial} />
+      </Field>
+      <Segmented
+        options={[{ value: 'mensile', label: 'Ogni mese' }, { value: 'annuale', label: 'Ogni anno' }, { value: 'una_tantum', label: 'Una volta' }]}
+        value={frequency} onChange={setFrequency} />
+      <Field label="Importo netto (€)" hint={frequency === 'annuale' && amount ? `Pari a ${eur(amount / 12, true)} al mese.` : 'Quello che arriva davvero sul conto, già senza tasse.'}>
+        <MoneyInput value={amount} onChange={setAmount} />
+      </Field>
+      {frequency === 'annuale' && (
+        <Field label="Mese in cui arriva" hint="Se non lo sai, il cashflow la divide sui 12 mesi.">
+          <select value={payMonth ?? ''} onChange={(e) => setPayMonth(e.target.value ? Number(e.target.value) : null)}>
+            <option value="">Non lo so</option>
+            {Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{monthNameByNumber(i + 1)}</option>)}
+          </select>
+        </Field>
+      )}
+      {frequency !== 'una_tantum' && (
+        <>
+          <div className="grid-2">
+            <Field label="Dal mese" hint={startMonth ? <button type="button" className="link-btn" onClick={() => setStartMonth('')}>Togli</button> : undefined}>
+              <input type="month" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} />
+            </Field>
+            <Field label="Fino al mese" hint={endMonth ? <button type="button" className="link-btn" onClick={() => setEndMonth('')}>Togli</button> : undefined}>
+              <input type="month" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} />
+            </Field>
+          </div>
+          <p className="muted small" style={{ marginTop: -6 }}>Lasciali vuoti se l'entrata non ha un inizio o una fine.</p>
+        </>
+      )}
+      {frequency === 'una_tantum' && (
+        <Field label="In che mese" hint="Entra nel cashflow e nel conto economico di quel mese.">
+          <input type="month" value={dueMonth} onChange={(e) => setDueMonth(e.target.value)} />
+        </Field>
+      )}
+      <InlineSwitch label="Attiva" checked={active} onChange={setActive} />
+      <Field label="Note">
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      {error && <p className="field-error">{error}</p>}
+      <FormActions saving={saving} onSave={save}
+        onDelete={initial ? () => void run(() => del('incomes', initial.id), onClose) : undefined} />
+    </Sheet>
+  );
+}
+
 export function DebtForm({ initial, onClose }: { initial?: Debt; onClose: () => void }) {
   const { today, add, edit, del, notify } = useData();
   const [name, setName] = useState(initial?.name ?? '');

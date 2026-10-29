@@ -11,6 +11,7 @@ export interface Backup {
   settings: Settings;
   invoices: Record<string, unknown>[];
   fixed_costs: Record<string, unknown>[];
+  incomes: Record<string, unknown>[];
   debts: Record<string, unknown>[];
   taxes: Record<string, unknown>[];
   pipeline: Record<string, unknown>[];
@@ -27,6 +28,7 @@ export function toBackup(d: Data): Backup {
     settings: d.settings,
     invoices: strip(d.invoices),
     fixed_costs: strip(d.fixed_costs),
+    incomes: strip(d.incomes),
     debts: strip(d.debts),
     taxes: strip(d.taxes),
     pipeline: strip(d.pipeline),

@@ -21,6 +21,7 @@ function moveSub(m: Movement, today: string) {
     case 'una_tantum': return `Spesa una tantum, ${monthName(m.date)}`;
     case 'annuale': return `Spesa di ogni anno, ${monthName(m.date)}`;
     case 'desiderio': return `Desiderio, ${monthName(m.date)}`;
+    case 'entrata': return `${m.income && m.income.frequency === 'annuale' ? 'Entrata di ogni anno' : 'Entrata una tantum'}, ${monthName(m.date)}`;
     default: return dayMonth(m.date);
   }
 }
@@ -44,6 +45,7 @@ function MoveRow({ m }: { m: Movement }) {
     else if (m.tax) open({ type: 'tax', initial: m.tax });
     else if (m.cost) open({ type: 'cost', scope: m.cost.scope, initial: m.cost });
     else if (m.wish) open({ type: 'wish', initial: m.wish });
+    else if (m.income) open({ type: 'income', initial: m.income });
     else if (m.debts && m.debts.length === 1) open({ type: 'debt', initial: m.debts[0] });
     else go('conti', { conti: 'patrimonio' });
   };
@@ -67,13 +69,25 @@ function MonthEntries({ month, showBalance }: { month: string; showBalance: bool
   const st = useMemo(() => monthStatement(data, month), [data, month]);
   const name = monthName(month);
   const hasRecurring = Math.abs(st.recurring) > 0.004;
-  if (!st.items.length && !hasRecurring && !(showBalance && st.opening != null)) {
+  const hasRecurringIn = Math.abs(st.recurringIn) > 0.004;
+  if (!st.items.length && !hasRecurring && !hasRecurringIn && !(showBalance && st.opening != null)) {
     return <p className="panel empty">Nessuna entrata o uscita {prepA(name)}.</p>;
   }
   return (
     <ul className="list panel">
       {showBalance && st.opening != null && (
         <li className="row edge"><span className="row-main">Sul conto il 1° {name}</span><Amount value={st.opening} /></li>
+      )}
+      {hasRecurringIn && (
+        <li>
+          <button className="row" onClick={() => go('conti', { conti: 'spese' })}>
+            <span className="row-main">
+              <span className="row-title">Entrate di ogni mese</span>
+              <span className="row-sub">Stipendio, pensione e le altre che non sono fatture</span>
+            </span>
+            <span className="row-end"><Amount value={st.recurringIn} signed /></span>
+          </button>
+        </li>
       )}
       {st.items.map((m, i) => <MoveRow key={i} m={m} />)}
       {hasRecurring && (
@@ -161,6 +175,7 @@ export function Home() {
     if (t.kind === 'opening') open({ type: 'opening' });
     else if (t.kind === 'cost') open({ type: 'cost', scope: t.row.scope, initial: t.row });
     else if (t.kind === 'debt') open({ type: 'debt', initial: t.row });
+    else if (t.kind === 'income') open({ type: 'income', initial: t.row });
     else open({ type: 'tax', initial: t.row });
   };
 

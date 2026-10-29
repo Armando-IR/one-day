@@ -10,7 +10,7 @@ import { Conti } from './screens/Conti';
 import { Impostazioni } from './screens/Impostazioni';
 import { Analisi } from './screens/Analisi';
 import { Login, NewPassword } from './screens/Login';
-import { CostForm, DebtForm, InvoiceForm, PipelineForm, SavingForm, TaxForm, WishForm } from './forms/forms';
+import { CostForm, DebtForm, IncomeForm, InvoiceForm, PipelineForm, SavingForm, TaxForm, WishForm } from './forms/forms';
 import { ImportSheet, OpeningForm, ParamsForm, ProbsForm, YearForm } from './forms/settingsForms';
 import { Sheet } from './ui/components';
 import { IconHome, IconInvoices, IconMonths, IconPlans, IconPlus } from './ui/icons';
@@ -319,9 +319,10 @@ const ADD: { title: string; sub: string; sheet: SheetState; wide?: boolean }[] =
   { title: 'Ipotesi di lavoro', sub: 'Un lavoro possibile, con la sua probabilità', sheet: { type: 'pipeline' } },
   { title: 'Desiderio', sub: 'Una cosa che vuoi comprare', sheet: { type: 'wish' } },
   { title: 'Spesa', sub: 'Ogni mese, ogni anno o una volta', sheet: { type: 'cost', scope: 'personale' } },
+  { title: 'Entrata', sub: 'Stipendio, pensione, affitto: non una fattura', sheet: { type: 'income' } },
   { title: 'Debito a rate', sub: 'Un prestito o un acquisto a rate', sheet: { type: 'debt' } },
   { title: 'Tasse (F24)', sub: 'Una scadenza da pagare', sheet: { type: 'tax' } },
-  { title: 'Risparmio', sub: 'Soldi da parte, fuori dal conto', sheet: { type: 'saving' } },
+  { title: 'Risparmio', sub: 'Soldi da parte, fuori dal conto', sheet: { type: 'saving' }, wide: true },
 ];
 
 function AddMenu({ onClose }: { onClose: () => void }) {
@@ -345,6 +346,7 @@ function SheetHost({ sheet, onClose }: { sheet: SheetState; onClose: () => void 
     case 'add': return <AddMenu onClose={onClose} />;
     case 'invoice': return <InvoiceForm kind={sheet.kind} initial={sheet.initial} onClose={onClose} />;
     case 'cost': return <CostForm scope={sheet.scope} initial={sheet.initial} onClose={onClose} />;
+    case 'income': return <IncomeForm initial={sheet.initial} onClose={onClose} />;
     case 'debt': return <DebtForm initial={sheet.initial} onClose={onClose} />;
     case 'tax': return <TaxForm initial={sheet.initial} onClose={onClose} />;
     case 'pipeline': return <PipelineForm initial={sheet.initial} onClose={onClose} />;
