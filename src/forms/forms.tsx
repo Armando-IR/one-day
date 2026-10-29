@@ -3,7 +3,7 @@ import type { Debt, FixedCost, Frequency, Income, Invoice, Kind, Phase, Pipeline
 import { PHASES } from '../lib/types';
 import { useData } from '../state/data';
 import { addDays, addMonths, fromMonthInput, monthIdx, toMonthInput } from '../lib/dates';
-import { DEFAULT_PROBS, monthlySaving, probableValue, wishMonthly, yearlyPayments } from '../lib/finance';
+import { DEFAULT_PROBS, monthlySaving, monthlySeries, probableValue, wishMonthly, yearlyPayments } from '../lib/finance';
 import { Field, FormActions, InlineSwitch, MoneyInput, PercentInput, Segmented, Sheet, TextInput } from '../ui/components';
 import { eur, monthLong, monthNameByNumber, pct, prepA } from '../ui/format';
 import { CalendarActions } from '../ui/calendar';
@@ -25,8 +25,10 @@ function useSave() {
 
 // ---------------------------------------------------------------- invoices
 export function InvoiceForm({ kind: kind0, initial, onClose }: { kind: Kind; initial?: Invoice; onClose: () => void }) {
-  const { data, today, add, edit, del, notify } = useData();
+  const { data, today, add, addMany, edit, del, notify } = useData();
   const [kind, setKind] = useState<Kind>(initial?.kind ?? kind0);
+  const [repeat, setRepeat] = useState(false);
+  const [until, setUntil] = useState('');
   const [party, setParty] = useState(initial?.party ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [amount, setAmount] = useState<number | null>(initial?.amount ?? null);
@@ -40,17 +42,26 @@ export function InvoiceForm({ kind: kind0, initial, onClose }: { kind: Kind; ini
     [data.invoices, kind],
   );
   const client = kind === 'ricavo';
+  const untilMonth = fromMonthInput(until);
+  const repeats = !initial && repeat && !!untilMonth && !!invoiceDate && monthIdx(untilMonth) > monthIdx(invoiceDate);
+  const repeatCount = repeats ? monthIdx(untilMonth as string) - monthIdx(invoiceDate) + 1 : 1;
 
   const save = () => {
     if (!party.trim()) return setError(client ? 'Scrivi il nome del cliente.' : 'Scrivi il nome del collaboratore.');
     if (!amount || amount <= 0) return setError("Scrivi l'importo.");
     if (!invoiceDate) return setError('Scrivi la data della fattura.');
+    if (!initial && repeat && !repeats) return setError("Scegli l'ultimo mese: deve venire dopo quello della fattura.");
     const row = {
       kind, party: party.trim(), description: blank(description), amount, invoice_date: invoiceDate,
       cash_date: cashDate || null, settled, note: blank(note),
     };
     void run(async () => {
       if (initial) return edit('invoices', initial.id, row);
+      if (repeats) {
+        const ok = !!(await addMany('invoices', monthlySeries(row, untilMonth as string)));
+        if (ok) notify(`${repeatCount} fatture aggiunte, una al mese`);
+        return ok;
+      }
       const ok = !!(await add('invoices', row));
       if (ok) notify(client ? 'Fattura aggiunta' : 'Fattura del collaboratore aggiunta');
       return ok;
@@ -77,13 +88,27 @@ export function InvoiceForm({ kind: kind0, initial, onClose }: { kind: Kind; ini
           <input type="date" value={cashDate ?? ''} onChange={(e) => setCashDate(e.target.value)} />
         </Field>
       </div>
-      <InlineSwitch label={client ? 'Già incassata' : 'Già pagata'} checked={settled} onChange={setSettled} />
+      {!initial && (
+        <>
+          <InlineSwitch label="Ripeti ogni mese" checked={repeat} onChange={setRepeat} />
+          {repeat && (
+            <Field label="Fino al mese"
+              hint={repeats
+                ? `Crea ${repeatCount} fatture, una al mese, da ${monthLong(invoiceDate)} ${prepA(monthLong(untilMonth as string))}. Ognuna la segni come ${client ? 'incassata' : 'pagata'} quando ${client ? 'arrivano i soldi' : 'la paghi'}.`
+                : 'Il mese dell’ultima fattura, per esempio la fine del contratto.'}>
+              <input type="month" value={until} onChange={(e) => setUntil(e.target.value)} />
+            </Field>
+          )}
+        </>
+      )}
+      <InlineSwitch label={repeats ? (client ? 'La prima è già incassata' : 'La prima è già pagata') : client ? 'Già incassata' : 'Già pagata'} checked={settled} onChange={setSettled} />
       {!settled && (
         <CalendarActions
           event={cashDate && party.trim() ? {
             uid: `fattura-${initial?.id ?? `${party.trim()}-${cashDate}`}`,
             title: `${client ? 'Incasso da' : 'Pagamento a'} ${party.trim()}${amount ? `, ${eur(amount, true)}` : ''}`,
             date: cashDate,
+            monthlyCount: repeats ? repeatCount : undefined,
             details: [description.trim(), note.trim()].filter(Boolean).join('\n') || undefined,
           } : null}
           missing={client ? 'Scrivi il cliente e quando arrivano i soldi.' : 'Scrivi il collaboratore e quando lo paghi.'} />

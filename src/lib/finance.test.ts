@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Data } from './types';
 import {
   balanceSheet, cashflow, clients, credits, debtsOverview, debtsSummary, economic, forecast, goals, installmentsBetween, lateDays,
-  cashHorizon, monthlySaving, monthStatement, movementsBetween, projections, tierOf,
+  cashHorizon, monthlySaving, monthlySeries, shiftMonths, monthStatement, movementsBetween, projections, tierOf,
   toComplete, yearlyPayments, DEFAULT_PROBS,
 } from './finance';
 
@@ -136,6 +136,23 @@ describe('spese con un mese di inizio e di fine', () => {
     expect(g.business).toBeCloseTo(140); // October: Studio runs
     expect(g.personalCosts).toBeCloseTo(30); // October: no rent yet
     expect(goals(ranged, '2026-12-10').business).toBeCloseTo(20);
+  });
+});
+
+describe('fattura ripetuta ogni mese', () => {
+  it('stesso giorno, il 31 diventa la fine del mese', () => {
+    expect(shiftMonths('2026-10-15', 1)).toBe('2026-11-15');
+    expect(shiftMonths('2027-01-31', 1)).toBe('2027-02-28');
+    expect(shiftMonths('2026-12-10', 2)).toBe('2027-02-10');
+  });
+  it('una fattura per mese fino al mese scelto; solo la prima può essere già incassata', () => {
+    const s = monthlySeries({ party: 'Alfa', amount: 1000, invoice_date: '2026-10-31', cash_date: '2026-11-30', settled: true }, '2027-01-01');
+    expect(s.map((x) => [x.invoice_date, x.cash_date, x.settled])).toEqual([
+      ['2026-10-31', '2026-11-30', true],
+      ['2026-11-30', '2026-12-30', false],
+      ['2026-12-31', '2027-01-30', false],
+      ['2027-01-31', '2027-02-28', false], // January included
+    ]);
   });
 });
 

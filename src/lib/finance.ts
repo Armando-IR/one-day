@@ -67,6 +67,26 @@ export const activeCosts = (d: Data, scope: FixedCost['scope']) =>
 export const oneOffIn = (d: Data, month: string, scope?: FixedCost['scope']) =>
   sum(d.fixed_costs.filter((c) => c.active && isOneOff(c) && (!scope || c.scope === scope)).map((c) => cashInMonth(c, month)));
 
+/** The same day `k` months later; the 31st becomes the last day of a shorter month. */
+export function shiftMonths(date: string, k: number): string {
+  const { y, m, d } = parseYMD(date);
+  const first = idxToMonth(y * 12 + (m - 1) + k);
+  const { y: y2, m: m2 } = parseYMD(first);
+  const last = new Date(y2, m2, 0).getDate();
+  return `${first.slice(0, 7)}-${pad(Math.min(d, last))}`;
+}
+
+/** A client paying every month: the same invoice from its month up to `until`, one per month. */
+export function monthlySeries<T extends { invoice_date: string; cash_date: string | null; settled: boolean }>(row: T, until: string): T[] {
+  const count = monthIdx(until) - monthIdx(row.invoice_date) + 1;
+  return Array.from({ length: Math.max(1, Math.min(count, 60)) }, (_, k) => ({
+    ...row,
+    invoice_date: shiftMonths(row.invoice_date, k),
+    cash_date: row.cash_date ? shiftMonths(row.cash_date, k) : null,
+    settled: k === 0 ? row.settled : false,
+  }));
+}
+
 /** Incomes (not invoices) coming in during a month: every month, once a year, or once. */
 export const incomeIn = (d: Data, month: string) => sum(d.incomes.filter((x) => x.active).map((x) => cashInMonth(x, month)));
 /** Recurring incomes per month (yearly ones divided by 12), counting only those running in that month. */

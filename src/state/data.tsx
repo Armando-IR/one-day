@@ -20,6 +20,8 @@ interface DataCtx {
   /** Why the last load failed, if it did. */
   loadError: string | null;
   add<T extends TableName>(table: T, row: NewRow<T>): Promise<RowOf<T> | null>;
+  /** Several rows in one request: all saved, or none. */
+  addMany<T extends TableName>(table: T, rows: NewRow<T>[]): Promise<RowOf<T>[] | null>;
   edit<T extends TableName>(table: T, id: string, patch: Partial<RowOf<T>>): Promise<boolean>;
   del(table: TableName, id: string): Promise<boolean>;
   saveSettings(patch: Partial<Settings>): Promise<boolean>;
@@ -127,6 +129,21 @@ export function DataProvider({ backend, cacheKey, children, fallback }: {
     [backend, commit, fail],
   );
 
+  const addMany = useCallback(
+    async <T extends TableName>(table: T, rows: NewRow<T>[]) => {
+      try {
+        const saved = await backend.insertMany(table, rows);
+        const cur = dataRef.current!;
+        commit({ ...cur, [table]: [...(cur[table] as unknown as RowOf<T>[]), ...saved] });
+        return saved;
+      } catch (e) {
+        fail(e);
+        return null;
+      }
+    },
+    [backend, commit, fail],
+  );
+
   const edit = useCallback(
     async <T extends TableName>(table: T, id: string, patch: Partial<RowOf<T>>) => {
       const before = dataRef.current!;
@@ -200,7 +217,7 @@ export function DataProvider({ backend, cacheKey, children, fallback }: {
   if (!data) return <>{fallback({ error: loadError, retry: () => void reload() })}</>;
   return (
     <Ctx.Provider
-      value={{ data, mode: backend.mode, today, stale, loadError, add, edit, del, saveSettings, importBackup, reload, notify, toasts }}
+      value={{ data, mode: backend.mode, today, stale, loadError, add, addMany, edit, del, saveSettings, importBackup, reload, notify, toasts }}
     >
       {children}
     </Ctx.Provider>
