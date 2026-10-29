@@ -27,7 +27,7 @@ function CashCard({ m, probable, open, onToggle }: { m: CashMonth; probable: num
     ['Rate', m.rate],
     ['Tasse (F24)', m.tasse],
     ['Spese una tantum', m.unaTantum],
-    ['Desideri da comprare', m.desideri],
+    ['Wishlist', m.desideri],
   ];
   return (
     <li className="month">

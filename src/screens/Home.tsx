@@ -20,7 +20,7 @@ function moveSub(m: Movement, today: string) {
     case 'pagamento': return `${dayMonth(m.date)}${m.settled ? ', già pagato' : late ? ', ancora da pagare' : ''}`;
     case 'una_tantum': return `Spesa una tantum, ${monthName(m.date)}`;
     case 'annuale': return `Spesa di ogni anno, ${monthName(m.date)}`;
-    case 'desiderio': return `Desiderio, ${monthName(m.date)}`;
+    case 'desiderio': return `Wishlist, ${monthName(m.date)}`;
     case 'entrata': return `${m.income && m.income.frequency === 'annuale' ? 'Entrata di ogni anno' : 'Entrata una tantum'}, ${monthName(m.date)}`;
     default: return dayMonth(m.date);
   }

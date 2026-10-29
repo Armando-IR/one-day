@@ -317,7 +317,7 @@ const ADD: { title: string; sub: string; sheet: SheetState; wide?: boolean }[] =
   { title: 'Fattura a un cliente', sub: 'Un lavoro da incassare', sheet: { type: 'invoice', kind: 'ricavo' } },
   { title: 'Fattura di un collaboratore', sub: 'Da pagare a chi ha lavorato con te', sheet: { type: 'invoice', kind: 'collaboratore' } },
   { title: 'Ipotesi di lavoro', sub: 'Un lavoro possibile, con la sua probabilità', sheet: { type: 'pipeline' } },
-  { title: 'Desiderio', sub: 'Una cosa che vuoi comprare', sheet: { type: 'wish' } },
+  { title: 'Wishlist', sub: 'Una cosa che vuoi comprare', sheet: { type: 'wish' } },
   { title: 'Spesa', sub: 'Ogni mese, ogni anno o una volta', sheet: { type: 'cost', scope: 'personale' } },
   { title: 'Entrata', sub: 'Stipendio, pensione, affitto: non una fattura', sheet: { type: 'income' } },
   { title: 'Debito a rate', sub: 'Un prestito o un acquisto a rate', sheet: { type: 'debt' } },

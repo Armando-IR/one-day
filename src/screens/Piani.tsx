@@ -67,7 +67,7 @@ function Obiettivi() {
     { label: 'Minimo', value: g.baseline, note: 'Copre spese di lavoro, tasse e quanto vuoi per te.', color: TIER_COLORS[1] },
     { label: pctLabel, value: g.plusPct, note: 'In più mette da parte una percentuale.', color: TIER_COLORS[tierOf(g.plusPct, g)] },
     { label: fixedLabel, value: g.plusFixed, note: 'In più mette da parte una cifra fissa.', color: TIER_COLORS[tierOf(g.plusFixed, g)] },
-    { label: 'Minimo + accantonamenti', value: g.plusWishes, note: 'In più mette da parte per le spese una tantum e i desideri in programma.', color: 'var(--accent-soft)' },
+    { label: 'Minimo + accantonamenti', value: g.plusWishes, note: 'In più mette da parte per le spese una tantum e la wishlist in programma.', color: 'var(--accent-soft)' },
   ];
   const [lowLabel, highLabel] = g.plusPct <= g.plusFixed ? [pctLabel, fixedLabel] : [fixedLabel, pctLabel];
   // Short names of the four levels, for chips and quarter tiles.
@@ -281,7 +281,7 @@ function Desideri() {
         </ul>
       )}
       <div className="btn-row">
-        <button className="btn secondary" onClick={() => open({ type: 'wish' })}>Aggiungi un desiderio</button>
+        <button className="btn secondary" onClick={() => open({ type: 'wish' })}>Aggiungi alla wishlist</button>
       </div>
     </>
   );
@@ -292,7 +292,7 @@ export function Piani() {
   const options: { value: PianiView; label: string }[] = [
     { value: 'obiettivi', label: 'Obiettivi' },
     { value: 'ipotesi', label: 'Ipotesi' },
-    { value: 'desideri', label: 'Desideri' },
+    { value: 'desideri', label: 'Wishlist' },
   ];
   return (
     <Screen title="Piani">

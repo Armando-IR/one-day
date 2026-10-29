@@ -299,12 +299,12 @@ export function analysis(d: Data, today: string): Analysis {
   // ------------------------------------------------ wishes and savings
   const ds: string[] = [];
   const planned = d.wishes.filter((w) => w.planned && w.target_month && monthIdx(w.target_month) >= ci);
-  if (planned.length) ds.push(`Per i desideri in programma (${list(planned.map((w) => w.name))}) metti da parte **${eur(g.wishesMonthly)}** al mese.`);
+  if (planned.length) ds.push(`Per la wishlist in programma (${list(planned.map((w) => w.name))}) metti da parte **${eur(g.wishesMonthly)}** al mese.`);
   const unplanned = d.wishes.filter((w) => !w.planned).length;
-  if (unplanned) ds.push(`${cap(count(unplanned, 'desiderio è', 'desideri sono'))} ancora senza un mese in programma.`);
+  if (unplanned) ds.push(`${cap(count(unplanned, 'voce della wishlist è', 'voci della wishlist sono'))} ancora senza un mese in programma.`);
   ds.push(`Per mettere da parte ${eur(s.savings_fixed)} al mese ti serve un margine di **${eur(g.plusFixed)}** al mese; per risparmiare il ${pct(s.savings_pct)}, **${eur(g.plusPct)}**.`);
   if (g.oneOffMonthly + g.wishesMonthly > 0.5) {
-    ds.push(`Contando anche quello da mettere da parte per spese una tantum e desideri, il margine che ti serve è **${eur(g.plusWishes)}** al mese.`);
+    ds.push(`Contando anche quello da mettere da parte per spese una tantum e wishlist, il margine che ti serve è **${eur(g.plusWishes)}** al mese.`);
   }
   if (average !== null) {
     const reach = ['resti sotto il minimo', 'copri il minimo, ma non ancora gli obiettivi di risparmio', 'raggiungi il primo obiettivo di risparmio', 'raggiungi tutti e due gli obiettivi di risparmio'];
@@ -327,7 +327,7 @@ export function analysis(d: Data, today: string): Analysis {
       { title: 'Il lavoro', points: lavoro },
       { title: 'Entrate e spese', points: spese },
       { title: 'Debiti e crediti', points: dc },
-      { title: 'Desideri e risparmio', points: ds },
+      { title: 'Wishlist e risparmio', points: ds },
     ].filter((x) => x.points.length > 0),
   };
 }

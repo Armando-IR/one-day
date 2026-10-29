@@ -558,13 +558,13 @@ export function WishForm({ initial, onClose }: { initial?: Wish; onClose: () => 
     void run(async () => {
       if (initial) return edit('wishes', initial.id, row);
       const ok = !!(await add('wishes', row));
-      if (ok) notify('Desiderio aggiunto');
+      if (ok) notify('Aggiunto alla wishlist');
       return ok;
     }, onClose);
   };
 
   return (
-    <Sheet title={initial ? 'Modifica desiderio' : 'Desiderio'} onClose={onClose}>
+    <Sheet title={initial ? 'Modifica voce della wishlist' : 'Wishlist'} onClose={onClose}>
       <Field label="Cosa vuoi comprare">
         <TextInput value={name} onChange={setName} autoFocus={!initial} />
       </Field>

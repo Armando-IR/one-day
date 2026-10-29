@@ -71,7 +71,7 @@ export function Analisi() {
 
       <p className="muted small">
         L'analisi usa gli stessi conti delle altre pagine. Per i mesi futuri conta solo quello che hai già inserito:
-        fatture, spese, rate, F24 e desideri. Gli incassi che non hai ancora scritto non ci sono.
+        fatture, entrate, spese, rate, F24 e wishlist. Gli incassi che non hai ancora scritto non ci sono.
       </p>
     </Screen>
   );

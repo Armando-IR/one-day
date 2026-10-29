@@ -105,7 +105,7 @@ export function ProbsForm({ onClose }: { onClose: () => void }) {
 }
 
 const LABELS: Record<(typeof TABLES)[number], string> = {
-  invoices: 'fatture', fixed_costs: 'spese fisse', incomes: 'entrate', debts: 'rate', taxes: 'scadenze F24', pipeline: 'ipotesi', wishes: 'desideri',
+  invoices: 'fatture', fixed_costs: 'spese fisse', incomes: 'entrate', debts: 'rate', taxes: 'scadenze F24', pipeline: 'ipotesi', wishes: 'voci della wishlist',
   savings: 'risparmi fuori dal conto',
 };
 
